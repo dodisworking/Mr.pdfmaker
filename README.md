@@ -1,4 +1,8 @@
-# Mr PDF Maker
+# Mr PDF Maker - Free Online PDF Converter
+
+**The #1 Free PDF Converter Online** - Convert any file to PDF instantly! Convert images (JPG, PNG, GIF), Word documents (DOCX), Excel files (XLSX), text files, and HTML to PDF. 100% free, no registration required, works entirely in your browser.
+
+🌐 **Live Site**: [https://dodisworking.github.io/Mr.pdfmaker/](https://dodisworking.github.io/Mr.pdfmaker/)
 
 A simple, beautiful PDF converter web application that works entirely in your browser - no backend required!
 
@@ -41,6 +45,23 @@ A simple, beautiful PDF converter web application that works entirely in your br
 ## Setup
 
 No setup required! Just open `index.html` in a web browser. All libraries are loaded from CDN.
+
+## SEO Optimized
+
+This project includes comprehensive SEO optimization:
+- ✅ Meta tags (title, description, keywords)
+- ✅ Open Graph tags for social sharing
+- ✅ Twitter Card tags
+- ✅ Structured data (JSON-LD) for rich snippets
+- ✅ FAQ schema markup
+- ✅ Sitemap.xml
+- ✅ Robots.txt
+- ✅ Semantic HTML structure
+- ✅ Hidden SEO content for search engines
+
+## Keywords
+
+PDF converter, convert to PDF, free PDF converter, online PDF converter, PDF maker, convert image to PDF, convert Word to PDF, convert Excel to PDF, JPG to PDF, PNG to PDF, DOCX to PDF, XLSX to PDF, text to PDF, HTML to PDF, PDF generator, create PDF online, PDF tool, PDF creator, PDF maker online, free PDF tool
 
 ## License
 
