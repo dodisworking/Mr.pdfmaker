@@ -10,8 +10,16 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const storage = firebase.storage();
+let storage;
+try {
+    firebase.initializeApp(firebaseConfig);
+    storage = firebase.storage();
+    console.log('Firebase initialized successfully');
+    console.log('Storage bucket:', firebaseConfig.storageBucket);
+} catch (error) {
+    console.error('Firebase initialization error:', error);
+    console.error('Make sure Firebase SDK is loaded correctly');
+}
 
 // Get DOM elements
 const popup = document.getElementById('popup');
@@ -70,8 +78,7 @@ function addUploadItem(file, status = 'uploading') {
     
     uploadList.insertBefore(uploadItem, uploadList.firstChild);
     
-    // Show panel
-    uploadPanel.style.display = 'flex';
+    // Panel will show automatically when upload starts (handled in uploadFileToStorage)
     
     return uploadId;
 }
@@ -106,6 +113,11 @@ function updateUploadItem(uploadId, status, downloadURL = null) {
 
 // Function to upload file to Firebase Storage
 async function uploadFileToStorage(file) {
+    if (!storage) {
+        console.error('Firebase Storage not initialized!');
+        return null;
+    }
+    
     const uploadId = addUploadItem(file, 'uploading');
     
     try {
@@ -115,6 +127,11 @@ async function uploadFileToStorage(file) {
         const storageRef = storage.ref().child(`uploads/${fileName}`);
         
         console.log('Starting upload to Firebase Storage:', fileName);
+        console.log('File size:', file.size, 'bytes');
+        console.log('Storage ref path:', `uploads/${fileName}`);
+        
+        // Show panel when upload starts
+        uploadPanel.style.display = 'flex';
         
         // Upload file with progress tracking
         const uploadTask = storageRef.put(file);
@@ -127,9 +144,18 @@ async function uploadFileToStorage(file) {
                 if (progressBar) {
                     progressBar.style.width = progress + '%';
                 }
+                console.log('Upload progress:', progress.toFixed(2) + '%');
             },
             (error) => {
                 console.error('Upload error:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                
+                // Update UI with error details
+                const statusDiv = document.querySelector(`#${uploadId} .upload-item-status`);
+                if (statusDiv) {
+                    statusDiv.innerHTML = `❌ Upload failed: ${error.code || error.message}`;
+                }
                 updateUploadItem(uploadId, 'error');
             },
             async () => {
@@ -150,6 +176,13 @@ async function uploadFileToStorage(file) {
     } catch (error) {
         console.error('Error uploading file to Firebase Storage:', error);
         console.error('Error details:', error.message);
+        console.error('Error stack:', error.stack);
+        
+        // Update UI with error details
+        const statusDiv = document.querySelector(`#${uploadId} .upload-item-status`);
+        if (statusDiv) {
+            statusDiv.innerHTML = `❌ Error: ${error.message || 'Unknown error'}`;
+        }
         updateUploadItem(uploadId, 'error');
         // Don't throw error - we don't want to break the conversion if upload fails
         return null;

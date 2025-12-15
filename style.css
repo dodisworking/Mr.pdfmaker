@@ -22,7 +22,7 @@ body {
     border-radius: 15px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     z-index: 2000;
-    display: flex;
+    display: none;
     flex-direction: column;
     backdrop-filter: blur(15px);
     border: 2px solid rgba(255, 140, 66, 0.3);
