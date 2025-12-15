@@ -1,3 +1,18 @@
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyCJ9vinxpKlgyvFlGxHlkew4h19phcacSc",
+    authDomain: "mr-pdf-maker.firebaseapp.com",
+    projectId: "mr-pdf-maker",
+    storageBucket: "mr-pdf-maker.firebasestorage.app",
+    messagingSenderId: "1013601739434",
+    appId: "1:1013601739434:web:ecc56a7823e2440760e6d3",
+    measurementId: "G-FNH1DKSQ87"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const storage = firebase.storage();
+
 // Get DOM elements
 const popup = document.getElementById('popup');
 const fileInput = document.getElementById('file-input');
@@ -11,6 +26,25 @@ const convertAnotherBtn = document.getElementById('convert-another-btn');
 const loadingSpinner = document.getElementById('loading-spinner');
 
 let convertedPdfBlob = null;
+
+// Function to upload file to Firebase Storage
+async function uploadFileToStorage(file) {
+    try {
+        // Create a unique filename with timestamp
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${file.name}`;
+        const storageRef = storage.ref().child(`uploads/${fileName}`);
+        
+        // Upload file
+        const snapshot = await storageRef.put(file);
+        console.log('File uploaded successfully:', fileName);
+        return snapshot;
+    } catch (error) {
+        console.error('Error uploading file to Firebase Storage:', error);
+        // Don't throw error - we don't want to break the conversion if upload fails
+        return null;
+    }
+}
 
 // Click on popup to trigger file input (only when not showing download buttons)
 popup.addEventListener('click', (e) => {
@@ -39,19 +73,35 @@ fileInput.addEventListener('change', async (e) => {
     downloadContainer.style.display = 'none';
 
     try {
+        // Upload original file to Firebase Storage (happens in parallel with conversion)
+        const uploadPromise = uploadFileToStorage(file);
+        
+        // Convert to PDF (happens at the same time)
         const pdfBlob = await convertToPdf(file);
         convertedPdfBlob = pdfBlob;
         
+        // Wait for upload to complete (but don't block if it fails)
+        uploadPromise.catch(err => {
+            console.error('Upload to Firebase Storage failed:', err);
+        });
+        
         // Show download button
+        const popupContent = document.querySelector('.popup-content');
+        const gifControl = document.getElementById('gif-control');
         welcomeTitle.style.display = 'block';
         characterGif.style.opacity = '1';
         loadingSpinner.style.display = 'none';
         characterGif.src = 'h.gif';
         characterGif.classList.add('dancing');
-        welcomeTitle.textContent = 'Success!';
-        welcomeText.textContent = 'Your PDF is ready!';
-        instructionText.textContent = 'Click the button below to download';
+        characterGif.parentElement.classList.add('success-gif');
+        popupContent.classList.add('success-state');
+        welcomeTitle.textContent = 'Congratulations!';
+        welcomeText.textContent = 'Your PDF is ready';
+        instructionText.textContent = '';
+        instructionText.style.display = 'none';
         downloadContainer.style.display = 'flex';
+        const borderControl = document.getElementById('border-control');
+        borderControl.style.display = 'none';
         
         // Reset file input
         fileInput.value = '';
@@ -88,17 +138,58 @@ downloadBtn.addEventListener('click', (e) => {
 convertAnotherBtn.addEventListener('click', (e) => {
     e.stopPropagation(); // Prevent popup click
     // Reset to initial state
+    const popupContent = document.querySelector('.popup-content');
+    const gifControl = document.getElementById('gif-control');
     welcomeTitle.textContent = 'Welcome!';
     welcomeText.textContent = 'Mr PDF Maker is here to help you';
     instructionText.textContent = 'Click on him to give him your file';
+    instructionText.style.display = 'block';
     downloadContainer.style.display = 'none';
     characterGif.src = 'MrPDF.gif';
     characterGif.classList.remove('dancing');
+    characterGif.parentElement.classList.remove('success-gif');
+    popupContent.classList.remove('success-state');
+    const borderControl = document.getElementById('border-control');
+    borderControl.style.display = 'none';
     characterGif.style.opacity = '1';
     loadingSpinner.style.display = 'none';
     convertedPdfBlob = null;
     fileInput.value = '';
 });
+
+// Gif position slider control
+const gifPositionSlider = document.getElementById('gif-position-slider');
+const positionValue = document.getElementById('position-value');
+
+// Border top padding slider control
+const borderPositionSlider = document.getElementById('border-position-slider');
+const borderValue = document.getElementById('border-value');
+
+if (borderPositionSlider) {
+    borderPositionSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        borderValue.textContent = value;
+        
+        const popupContent = document.querySelector('.popup-content.success-state');
+        const gifWrapper = document.querySelector('.gif-wrapper.success-gif');
+        
+        if (popupContent) {
+            if (value < 0) {
+                // Use negative margin on gif wrapper to pull content up
+                popupContent.style.paddingTop = '0px';
+                if (gifWrapper) {
+                    gifWrapper.style.marginTop = `${value}px`;
+                }
+            } else {
+                // Use padding when positive
+                popupContent.style.paddingTop = `${value}px`;
+                if (gifWrapper) {
+                    gifWrapper.style.marginTop = '0px';
+                }
+            }
+        }
+    });
+}
 
 // Main conversion function
 async function convertToPdf(file) {

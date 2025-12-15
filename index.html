@@ -191,7 +191,9 @@
         <!-- Welcome Popup -->
         <div class="popup" id="popup">
             <div class="popup-content">
-                <img src="MrPDF.gif" alt="Mr PDF Maker - Free Online PDF Converter Tool" id="character-gif" class="character-gif">
+                <div class="gif-wrapper">
+                    <img src="MrPDF.gif" alt="Mr PDF Maker - Free Online PDF Converter Tool" id="character-gif" class="character-gif">
+                </div>
                 <div id="loading-spinner" class="loading-spinner" style="display: none;">
                     <div class="spinner"></div>
                 </div>
@@ -202,6 +204,12 @@
                     <button id="download-btn" class="download-btn sunset-btn">Download PDF</button>
                     <button id="convert-another-btn" class="convert-another-btn sunset-btn">Convert Another File</button>
                 </div>
+                
+                <!-- Border Top Padding Control (for testing) -->
+                <div id="border-control" class="gif-control" style="display: none;">
+                    <label>Top Padding: <span id="border-value">25</span>px</label>
+                    <input type="range" id="border-position-slider" min="-100" max="100" value="25" step="5">
+                </div>
             </div>
         </div>
         
@@ -209,6 +217,10 @@
         <input type="file" id="file-input" style="display: none;" accept="*/*">
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
     <!-- CDN Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>

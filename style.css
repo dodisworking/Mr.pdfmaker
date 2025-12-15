@@ -49,20 +49,49 @@ body {
     position: relative;
 }
 
+.popup-content.success-state {
+    max-width: 400px;
+    padding: 0px 30px 25px;
+    min-height: auto;
+    transform: translateY(50px);
+}
+
 .popup-content > * {
     position: relative;
     z-index: 1;
 }
 
+.gif-wrapper {
+    width: 150px;
+    height: 225px;
+    margin: 0 auto 20px;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.gif-wrapper.success-gif {
+    width: 300px;
+    height: 450px;
+    margin: -100px auto 0;
+    margin-bottom: 0;
+    transform: translateY(180px);
+}
+
 .character-gif {
     width: 150px;
     height: auto;
-    margin-bottom: 20px;
     display: block;
     margin-left: auto;
     margin-right: auto;
     position: relative;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, width 0.3s ease;
+    margin-top: -38px;
+}
+
+.gif-wrapper.success-gif .character-gif {
+    width: 300px;
+    margin-top: 0;
 }
 
 .loading-spinner {
@@ -107,6 +136,61 @@ body {
     color: #ff6b35;
     margin-bottom: 8px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.popup-content.success-state .welcome-title {
+    font-size: 26px;
+    margin-top: -30px;
+    margin-bottom: 6px;
+}
+
+.popup-content.success-state .welcome-text {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.gif-control {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 107, 53, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.gif-control label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #ff6b35;
+    font-weight: bold;
+}
+
+.gif-control input[type="range"] {
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    background: #ddd;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.gif-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ff6b35;
+    cursor: pointer;
+}
+
+.gif-control input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ff6b35;
+    cursor: pointer;
+    border: none;
 }
 
 .instruction-text {

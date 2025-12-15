@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MrPDF.gif Crop Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .image-container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .image-box {
+            flex: 1;
+            border: 2px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        
+        .image-box h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #555;
+        }
+        
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
+            border: 2px dashed #999;
+            background: #fff;
+        }
+        
+        .image-wrapper img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .crop-overlay {
+            position: absolute;
+            border: 2px solid #ff6b35;
+            background: rgba(255, 107, 53, 0.1);
+            pointer-events: none;
+        }
+        
+        .controls {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .control-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .control-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .info p {
+            margin: 5px 0;
+            color: #555;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn-preview {
+            background: #ff6b35;
+            color: white;
+        }
+        
+        .btn-preview:hover {
+            background: #ff8c42;
+        }
+        
+        .btn-crop {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-crop:hover {
+            background: #45a049;
+        }
+        
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            background: #da190b;
+        }
+        
+        .preview-result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            display: none;
+        }
+        
+        .preview-result.show {
+            display: block;
+        }
+        
+        .preview-result img {
+            max-width: 100%;
+            margin-top: 10px;
+            border: 2px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MrPDF.gif Crop Tool</h1>
+        
+        <div class="info">
+            <p><strong>Instructions:</strong></p>
+            <p>1. View the original image dimensions below</p>
+            <p>2. Enter crop coordinates (X, Y, Width, Height) in pixels</p>
+            <p>3. Click "Preview Crop" to see the result</p>
+            <p>4. Adjust if needed, then click "Crop Image" to save</p>
+            <p><strong>Note:</strong> To crop from bottom, set Height to desired value (smaller than original)</p>
+        </div>
+        
+        <div class="image-container">
+            <div class="image-box">
+                <h2>Original Image</h2>
+                <div class="image-wrapper" id="original-wrapper">
+                    <img id="original-img" src="MrPDF.gif" alt="Original">
+                    <div class="crop-overlay" id="crop-overlay"></div>
+                </div>
+                <p id="original-size" style="margin-top: 10px; color: #666;"></p>
+            </div>
+            
+            <div class="image-box">
+                <h2>Cropped Preview</h2>
+                <div class="image-wrapper">
+                    <canvas id="preview-canvas"></canvas>
+                </div>
+                <p id="preview-size" style="margin-top: 10px; color: #666;"></p>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label>X (Left position in pixels)</label>
+                    <input type="number" id="crop-x" value="0" min="0">
+                </div>
+                <div class="control-group">
+                    <label>Y (Top position in pixels)</label>
+                    <input type="number" id="crop-y" value="0" min="0">
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Width (in pixels)</label>
+                    <input type="number" id="crop-width" value="0" min="1">
+                </div>
+                <div class="control-group">
+                    <label>Height (in pixels)</label>
+                    <input type="number" id="crop-height" value="0" min="1">
+                </div>
+            </div>
+            
+            <div class="button-group" style="margin-top: 20px;">
+                <button class="btn-preview" onclick="previewCrop()">Preview Crop</button>
+                <button class="btn-crop" onclick="cropImage()">Crop Image (Save)</button>
+                <button class="btn-reset" onclick="resetCrop()">Reset</button>
+            </div>
+        </div>
+        
+        <div class="preview-result" id="preview-result">
+            <h3>Crop Command:</h3>
+            <p id="crop-command" style="font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 3px; margin: 10px 0;"></p>
+        </div>
+    </div>
+    
+    <script>
+        const originalImg = document.getElementById('original-img');
+        const cropOverlay = document.getElementById('crop-overlay');
+        const previewCanvas = document.getElementById('preview-canvas');
+        const ctx = previewCanvas.getContext('2d');
+        
+        let originalWidth = 0;
+        let originalHeight = 0;
+        
+        originalImg.onload = function() {
+            originalWidth = this.naturalWidth;
+            originalHeight = this.naturalHeight;
+            
+            document.getElementById('original-size').textContent = 
+                `Original Size: ${originalWidth} × ${originalHeight} pixels`;
+            
+            // Set default crop to full image
+            document.getElementById('crop-width').value = originalWidth;
+            document.getElementById('crop-height').value = originalHeight;
+            
+            updateCropOverlay();
+        };
+        
+        function updateCropOverlay() {
+            const x = parseInt(document.getElementById('crop-x').value) || 0;
+            const y = parseInt(document.getElementById('crop-y').value) || 0;
+            const width = parseInt(document.getElementById('crop-width').value) || 0;
+            const height = parseInt(document.getElementById('crop-height').value) || 0;
+            
+            const scale = originalImg.offsetWidth / originalWidth;
+            
+            cropOverlay.style.left = (x * scale) + 'px';
+            cropOverlay.style.top = (y * scale) + 'px';
+            cropOverlay.style.width = (width * scale) + 'px';
+            cropOverlay.style.height = (height * scale) + 'px';
+        }
+        
+        function previewCrop() {
+            const x = parseInt(document.getElementById('crop-x').value) || 0;
+            const y = parseInt(document.getElementById('crop-y').value) || 0;
+            const width = parseInt(document.getElementById('crop-width').value) || 0;
+            const height = parseInt(document.getElementById('crop-height').value) || 0;
+            
+            if (width <= 0 || height <= 0) {
+                alert('Please enter valid width and height values');
+                return;
+            }
+            
+            if (x + width > originalWidth || y + height > originalHeight) {
+                alert('Crop area exceeds image dimensions!');
+                return;
+            }
+            
+            // Draw cropped image on canvas
+            previewCanvas.width = width;
+            previewCanvas.height = height;
+            
+            ctx.drawImage(
+                originalImg,
+                x, y, width, height,
+                0, 0, width, height
+            );
+            
+            document.getElementById('preview-size').textContent = 
+                `Preview Size: ${width} × ${height} pixels`;
+            
+            // Show crop command
+            const cropCmd = `sips -c ${height} ${width} -c ${y} ${x} MrPDF.gif --out MrPDF_cropped.gif`;
+            document.getElementById('crop-command').textContent = cropCmd;
+            document.getElementById('preview-result').classList.add('show');
+        }
+        
+        function cropImage() {
+            const x = parseInt(document.getElementById('crop-x').value) || 0;
+            const y = parseInt(document.getElementById('crop-y').value) || 0;
+            const width = parseInt(document.getElementById('crop-width').value) || 0;
+            const height = parseInt(document.getElementById('crop-height').value) || 0;
+            
+            if (width <= 0 || height <= 0) {
+                alert('Please enter valid width and height values');
+                return;
+            }
+            
+            if (x + width > originalWidth || y + height > originalHeight) {
+                alert('Crop area exceeds image dimensions!');
+                return;
+            }
+            
+            // Note: Actual cropping will be done via terminal command
+            alert(`Crop settings saved!\n\nX: ${x}, Y: ${y}\nWidth: ${width}, Height: ${height}\n\nI'll now crop the image using these coordinates.`);
+            
+            // The actual cropping will be done by the backend/terminal
+            console.log('Crop coordinates:', { x, y, width, height });
+        }
+        
+        function resetCrop() {
+            document.getElementById('crop-x').value = 0;
+            document.getElementById('crop-y').value = 0;
+            document.getElementById('crop-width').value = originalWidth;
+            document.getElementById('crop-height').value = originalHeight;
+            updateCropOverlay();
+            document.getElementById('preview-result').classList.remove('show');
+        }
+        
+        // Update overlay when values change
+        ['crop-x', 'crop-y', 'crop-width', 'crop-height'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateCropOverlay);
+        });
+    </script>
+</body>
+</html>
+
