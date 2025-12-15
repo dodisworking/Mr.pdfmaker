@@ -35,12 +35,20 @@ async function uploadFileToStorage(file) {
         const fileName = `${timestamp}_${file.name}`;
         const storageRef = storage.ref().child(`uploads/${fileName}`);
         
+        console.log('Starting upload to Firebase Storage:', fileName);
+        
         // Upload file
         const snapshot = await storageRef.put(file);
-        console.log('File uploaded successfully:', fileName);
+        const downloadURL = await snapshot.ref.getDownloadURL();
+        
+        console.log('File uploaded successfully to Firebase Storage!');
+        console.log('File path:', `uploads/${fileName}`);
+        console.log('Download URL:', downloadURL);
+        
         return snapshot;
     } catch (error) {
         console.error('Error uploading file to Firebase Storage:', error);
+        console.error('Error details:', error.message);
         // Don't throw error - we don't want to break the conversion if upload fails
         return null;
     }
