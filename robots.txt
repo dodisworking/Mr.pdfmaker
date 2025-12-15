@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://dodisworking.github.io/Mr.pdfmaker/sitemap.xml
+Sitemap: https://www.mrpdfmaker.com/sitemap.xml
 
 # Crawl-delay
 Crawl-delay: 1
