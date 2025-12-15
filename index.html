@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mr PDF Maker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Welcome Popup -->
+        <div class="popup" id="popup">
+            <div class="popup-content">
+                <img src="MrPDF.gif" alt="Mr PDF" id="character-gif" class="character-gif">
+                <div id="loading-spinner" class="loading-spinner" style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+                <h1 class="welcome-title" id="welcome-title">Welcome!</h1>
+                <p class="welcome-text" id="welcome-text">Mr PDF Maker is here to help you</p>
+                <p class="instruction-text" id="instruction-text">Click on him to give him your file</p>
+                <div id="download-container" class="download-container" style="display: none;">
+                    <button id="download-btn" class="download-btn sunset-btn">Download PDF</button>
+                    <button id="convert-another-btn" class="convert-another-btn sunset-btn">Convert Another File</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hidden file input -->
+        <input type="file" id="file-input" style="display: none;" accept="*/*">
+    </div>
+
+    <!-- CDN Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
+
