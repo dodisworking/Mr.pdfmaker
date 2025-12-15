@@ -216,6 +216,19 @@
         <!-- Hidden file input -->
         <input type="file" id="file-input" style="display: none;" accept="*/*">
     </div>
+    
+    <!-- Firebase Storage Upload Status Panel -->
+    <div class="upload-panel" id="upload-panel">
+        <div class="upload-panel-header">
+            <h3>📁 Files to Cloud Storage</h3>
+            <button class="close-panel" id="close-panel">×</button>
+        </div>
+        <div class="upload-panel-content">
+            <div id="upload-list" class="upload-list">
+                <p class="no-uploads">No files uploaded yet</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>

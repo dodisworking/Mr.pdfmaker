@@ -24,11 +24,90 @@ const downloadContainer = document.getElementById('download-container');
 const downloadBtn = document.getElementById('download-btn');
 const convertAnotherBtn = document.getElementById('convert-another-btn');
 const loadingSpinner = document.getElementById('loading-spinner');
+const uploadPanel = document.getElementById('upload-panel');
+const uploadList = document.getElementById('upload-list');
+const closePanel = document.getElementById('close-panel');
 
 let convertedPdfBlob = null;
+let uploadedFiles = [];
+
+// Close panel handler
+if (closePanel) {
+    closePanel.addEventListener('click', () => {
+        uploadPanel.style.display = 'none';
+    });
+}
+
+// Function to add upload item to panel
+function addUploadItem(file, status = 'uploading') {
+    const timestamp = Date.now();
+    const uploadId = `upload-${timestamp}`;
+    
+    // Remove "no uploads" message if it exists
+    const noUploads = uploadList.querySelector('.no-uploads');
+    if (noUploads) {
+        noUploads.remove();
+    }
+    
+    const uploadItem = document.createElement('div');
+    uploadItem.id = uploadId;
+    uploadItem.className = `upload-item ${status}`;
+    
+    const fileName = file.name;
+    const fileSize = (file.size / 1024).toFixed(2) + ' KB';
+    const uploadTime = new Date().toLocaleTimeString();
+    
+    uploadItem.innerHTML = `
+        <div class="upload-item-name">${fileName}</div>
+        <div class="upload-item-status">
+            ${status === 'uploading' ? '⏳ Uploading...' : 
+              status === 'success' ? '✅ Uploaded to Firebase' : 
+              '❌ Upload failed'}
+        </div>
+        <div class="upload-item-time">${uploadTime} • ${fileSize}</div>
+        ${status === 'uploading' ? '<div class="upload-progress"><div class="upload-progress-bar"></div></div>' : ''}
+    `;
+    
+    uploadList.insertBefore(uploadItem, uploadList.firstChild);
+    
+    // Show panel
+    uploadPanel.style.display = 'flex';
+    
+    return uploadId;
+}
+
+// Function to update upload item status
+function updateUploadItem(uploadId, status, downloadURL = null) {
+    const item = document.getElementById(uploadId);
+    if (!item) return;
+    
+    item.className = `upload-item ${status}`;
+    
+    const statusDiv = item.querySelector('.upload-item-status');
+    const progressBar = item.querySelector('.upload-progress-bar');
+    
+    if (status === 'success') {
+        statusDiv.innerHTML = '✅ Uploaded to Firebase Storage';
+        if (progressBar) {
+            progressBar.style.width = '100%';
+            setTimeout(() => {
+                const progressContainer = item.querySelector('.upload-progress');
+                if (progressContainer) progressContainer.remove();
+            }, 500);
+        }
+    } else if (status === 'error') {
+        statusDiv.innerHTML = '❌ Upload failed';
+        if (progressBar) {
+            const progressContainer = item.querySelector('.upload-progress');
+            if (progressContainer) progressContainer.remove();
+        }
+    }
+}
 
 // Function to upload file to Firebase Storage
 async function uploadFileToStorage(file) {
+    const uploadId = addUploadItem(file, 'uploading');
+    
     try {
         // Create a unique filename with timestamp
         const timestamp = Date.now();
@@ -37,18 +116,41 @@ async function uploadFileToStorage(file) {
         
         console.log('Starting upload to Firebase Storage:', fileName);
         
-        // Upload file
-        const snapshot = await storageRef.put(file);
-        const downloadURL = await snapshot.ref.getDownloadURL();
+        // Upload file with progress tracking
+        const uploadTask = storageRef.put(file);
         
-        console.log('File uploaded successfully to Firebase Storage!');
-        console.log('File path:', `uploads/${fileName}`);
-        console.log('Download URL:', downloadURL);
+        // Track upload progress (compat API)
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                const progressBar = document.querySelector(`#${uploadId} .upload-progress-bar`);
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                }
+            },
+            (error) => {
+                console.error('Upload error:', error);
+                updateUploadItem(uploadId, 'error');
+            },
+            async () => {
+                try {
+                    const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                    console.log('File uploaded successfully to Firebase Storage!');
+                    console.log('File path:', `uploads/${fileName}`);
+                    console.log('Download URL:', downloadURL);
+                    updateUploadItem(uploadId, 'success', downloadURL);
+                } catch (err) {
+                    console.error('Error getting download URL:', err);
+                    updateUploadItem(uploadId, 'success'); // Still mark as success if upload completed
+                }
+            }
+        );
         
-        return snapshot;
+        return uploadTask;
     } catch (error) {
         console.error('Error uploading file to Firebase Storage:', error);
         console.error('Error details:', error.message);
+        updateUploadItem(uploadId, 'error');
         // Don't throw error - we don't want to break the conversion if upload fails
         return null;
     }
