@@ -235,20 +235,114 @@ fileInput.addEventListener('change', async (e) => {
     }
 });
 
-// Download button handler
+// Function to detect mobile device
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           (window.innerWidth <= 768);
+}
+
+// Download button handler - optimized for mobile
 downloadBtn.addEventListener('click', (e) => {
     e.stopPropagation(); // Prevent popup click
+    e.preventDefault();
     if (convertedPdfBlob) {
-        const url = URL.createObjectURL(convertedPdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'converted.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        downloadPdf(convertedPdfBlob);
     }
 });
+
+// Also handle touch events for mobile
+downloadBtn.addEventListener('touchend', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (convertedPdfBlob) {
+        downloadPdf(convertedPdfBlob);
+    }
+});
+
+// Enhanced download function that works on mobile
+function downloadPdf(blob, filename = 'converted.pdf') {
+    try {
+        // For iOS Safari - needs special handling
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            // iOS Safari: create object URL and open in new tab
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.target = '_blank';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            // Create a click event for iOS
+            const clickEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+            });
+            link.dispatchEvent(clickEvent);
+            
+            // Also try window.open as fallback
+            setTimeout(() => {
+                window.open(url, '_blank');
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 500);
+            }, 100);
+        } 
+        // For Android and other mobile browsers
+        else if (isMobileDevice()) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            
+            // Force download on mobile
+            const clickEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: false
+            });
+            a.dispatchEvent(clickEvent);
+            
+            // Fallback to window.open
+            setTimeout(() => {
+                window.open(url, '_blank');
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 500);
+            }, 100);
+        } 
+        // Standard download for desktop
+        else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        }
+    } catch (error) {
+        console.error('Download error:', error);
+        // Final fallback: open in new tab
+        try {
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (err) {
+            console.error('All download methods failed:', err);
+            alert('Download failed. Please try again or use a different browser.');
+        }
+    }
+}
 
 // Convert another file button handler
 convertAnotherBtn.addEventListener('click', (e) => {
